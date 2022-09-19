@@ -113,7 +113,7 @@ class SubsampledDatasetFolder(DatasetFolder):
         super(DatasetFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         
-        classes, class_to_idx = self.find_classes(self.root)
+        classes, class_to_idx = self._find_classes(self.root) # NOTE: Newer versions of timm may not require underscore
         samples = make_subsampled_dataset(self.root, class_to_idx, extensions, is_valid_file, sampling_ratio=sampling_ratio, nb_classes=nb_classes)
 
         if len(samples) == 0:
