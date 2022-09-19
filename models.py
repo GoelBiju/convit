@@ -15,6 +15,38 @@ from timm.models.vision_transformer import _cfg
 from timm.models.registry import register_model
 
 @register_model
+def convit_micro(pretrained=False, **kwargs):
+    num_heads = 2
+    kwargs['embed_dim'] *= num_heads
+    model = VisionTransformer(
+        num_heads=num_heads,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    model.default_cfg = _cfg()
+    if pretrained:
+        checkpoint = torch.hub.load_state_dict_from_url(
+            url="https://dl.fbaipublicfiles.com/convit/convit_tiny.pth",
+            map_location="cpu", check_hash=True
+        )
+        model.load_state_dict(checkpoint)
+    return model
+
+@register_model
+def convit_mini(pretrained=False, **kwargs):
+    num_heads = 3
+    kwargs['embed_dim'] *= num_heads
+    model = VisionTransformer(
+        num_heads=num_heads,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    model.default_cfg = _cfg()
+    if pretrained:
+        checkpoint = torch.hub.load_state_dict_from_url(
+            url="https://dl.fbaipublicfiles.com/convit/convit_tiny.pth",
+            map_location="cpu", check_hash=True
+        )
+        model.load_state_dict(checkpoint)
+    return model
+
+@register_model
 def convit_tiny(pretrained=False, **kwargs):
     num_heads = 4
     kwargs['embed_dim'] *= num_heads

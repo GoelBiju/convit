@@ -42,6 +42,7 @@ def get_args_parser():
 
     parser.add_argument('--input-size', default=224, type=int, help='images input size')
     parser.add_argument('--embed_dim', default=48, type=int, help='embedding dimension per head')
+    parser.add_argument('--depth', default=12, type=int, help='number of blocks')
 
     parser.add_argument('--drop', type=float, default=0.0, metavar='PCT',
                         help='Dropout rate (default: 0.)')
@@ -177,6 +178,21 @@ def get_args_parser():
 
     return parser
 
+def get_mean_and_std(dataloader):
+    channels_sum, channels_squared_sum, num_batches = 0, 0, 0
+    for data, _ in dataloader:
+        # Mean over batch, height and width, but not over the channels
+        channels_sum += torch.mean(data, dim=[0,2,3])
+        channels_squared_sum += torch.mean(data**2, dim=[0,2,3])
+        num_batches += 1
+    
+    mean = channels_sum / num_batches
+
+    # std = sqrt(E[X^2] - (E[X])^2)
+    std = (channels_squared_sum / num_batches - mean ** 2) ** 0.5
+
+    return mean, std
+
 def main(args):
     utils.init_distributed_mode(args)
 
@@ -216,6 +232,19 @@ def main(args):
         drop_last=True,
     )
 
+
+    mean, std = get_mean_and_std(data_loader_train)
+    print(f"mean of dataset is: {mean}")
+    print(f"std of dataset is: {std}")
+    import matplotlib.pyplot as plt
+    train_features, train_labels = next(iter(data_loader_train))
+    img = train_features[0].squeeze().permute(1, 2, 0)
+    label = train_labels[0]
+    plt.imshow(img, cmap="gray")
+    plt.savefig('img.png')
+    print(np.amax(img.numpy()))
+    print(np.amin(img.numpy()))
+
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, batch_size=int(1.5 * args.batch_size),
         shuffle=False, num_workers=args.num_workers,
@@ -241,6 +270,7 @@ def main(args):
         local_up_to_layer=args.local_up_to_layer,
         locality_strength=args.locality_strength,
         embed_dim = args.embed_dim,
+        depth = args.depth
     )
 
     print(model)
@@ -301,6 +331,7 @@ def main(args):
         print(f"Throughput : {throughput:.2f}")
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+        print(f"test_stats contain these keys: {test_stats.keys()}")
         return
 
 

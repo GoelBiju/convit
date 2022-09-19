@@ -53,7 +53,16 @@ def make_subsampled_dataset(
                     imgs+=1
     return instances
 
+def make_mosmed_test_samples(root_dir, folder_name, slices_names, class_to_idx):
+    instances = []
+    class_index = class_to_idx[folder_name[0]]
+    data_path = os.path.join(root_dir, folder_name)
 
+    for img in slices_names:
+        path = data_path + img
+        item = path, class_index
+        instances.append(item)
+    return instances
 
 class INatDataset(ImageFolder):
     def __init__(self, root, train=True, year=2018, transform=None, target_transform=None,
@@ -104,7 +113,7 @@ class SubsampledDatasetFolder(DatasetFolder):
         super(DatasetFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         
-        classes, class_to_idx = self._find_classes(self.root)
+        classes, class_to_idx = self.find_classes(self.root)
         samples = make_subsampled_dataset(self.root, class_to_idx, extensions, is_valid_file, sampling_ratio=sampling_ratio, nb_classes=nb_classes)
 
         if len(samples) == 0:
@@ -128,6 +137,34 @@ class ImageNetDataset(SubsampledDatasetFolder):
     def __init__(self, root, loader=default_loader, is_valid_file=None,  **kwargs):
         super(ImageNetDataset, self).__init__(root, loader, IMG_EXTENSIONS if is_valid_file is None else None,
                                               is_valid_file=is_valid_file, **kwargs)
+        self.imgs = self.samples
+
+class NonSampledDatasetFolder(DatasetFolder):
+
+    def __init__(self, root, folder_name, slices_names, loader, extensions=None, transform=None, target_transform=None, is_valid_file=None, sampling_ratio=1.):
+
+        super(DatasetFolder, self).__init__(root, transform=transform,
+                                            target_transform=target_transform)
+        
+        classes = ['P', 'N']
+        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
+
+        self.folder_name = folder_name
+        self.slices_names = slices_names
+        samples = make_mosmed_test_samples(root_dir=self.root, folder_name=self.folder_name, slices_names=self.slices_names, class_to_idx= class_to_idx)
+        
+        self.loader = loader
+        self.extensions = extensions
+
+        self.classes = classes
+        self.class_to_idx = class_to_idx
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+
+class MosMedDataset(NonSampledDatasetFolder):
+    def __init__(self, root, folder_name, slices_names, loader=default_loader, extensions=None, transform=None, target_transform=None, is_valid_file=None, sampling_ratio=1., nb_classes=2):
+        super(MosMedDataset, self).__init__(root, folder_name, slices_names, loader, transform=transform,
+                                    target_transform=target_transform)
         self.imgs = self.samples
 
 
@@ -156,6 +193,10 @@ def build_dataset(is_train, args):
         dataset = INatDataset(args.data_path, train=is_train, year=2019,
                               category=args.inat_category, transform=transform)
         nb_classes = dataset.nb_classes
+    elif args.data_set == 'TestMosMed':
+        dataset = MosMedDataset(root=args.data_path, folder_name=args.folder_name, slices_names=args.slices_names, transform=transform,
+                                  sampling_ratio=1.)
+        nb_classes = 2
 
     return dataset, nb_classes
 
@@ -174,12 +215,12 @@ def build_transform(is_train, args):
             re_mode=args.remode,
             re_count=args.recount,
         )
-        if not resize_im:
-            # replace RandomResizedCropAndInterpolation with
-            # RandomCrop
-            transform.transforms[0] = transforms.RandomCrop(
-                args.input_size, padding=4)
-        return transform
+        # if not resize_im:
+        #     # replace RandomResizedCropAndInterpolation with
+        #     # RandomCrop
+        #     transform.transforms[0] = transforms.RandomCrop(
+        #         args.input_size, padding=4)
+        # return transform
 
     t = []
     if resize_im:
@@ -190,5 +231,8 @@ def build_transform(is_train, args):
         t.append(transforms.CenterCrop(args.input_size))
 
     t.append(transforms.ToTensor())
-    t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    # t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    mean = (0,0,0)
+    std = (1,1,1)
+    t.append(transforms.Normalize(mean, std))
     return transforms.Compose(t)
