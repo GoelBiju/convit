@@ -88,7 +88,7 @@ def evaluate(data_loader, model, device):
             loss = criterion(output, target)
 
         # acc1, acc4 = accuracy(output, target, topk=(1,4))
-        acc1, acc4 = accuracy(output, target, topk=(1,))
+        acc1 = accuracy(output, target, topk=(1,))
 
 
         batch_size = images.shape[0]
