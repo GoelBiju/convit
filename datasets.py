@@ -233,13 +233,17 @@ def build_transform(is_train, args):
         t.append(
             transforms.Resize(size, interpolation=3),  # to maintain same ratio w.r.t. 224 images
         )
-        t.append(transforms.CenterCrop(args.input_size))
+        # t.append(transforms.CenterCrop(args.input_size))
 
     t.append(transforms.ToTensor())
-    # t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
-    
-    mean = (0,0,0)
-    std = (1,1,1)
 
+    # t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    # mean = (0,0,0)
+    # std = (1,1,1)
+    
+    # tensor([0.4871, 0.5598, 0.3781]) tensor([0.1980, 0.1862, 0.1908])
+    mean = (0.4871, 0.5598, 0.3781)
+    std = (0.1980, 0.1862, 0.1908)
     t.append(transforms.Normalize(mean, std))
+
     return transforms.Compose(t)
