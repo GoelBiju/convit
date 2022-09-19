@@ -87,14 +87,19 @@ def evaluate(data_loader, model, device):
             output = model(images)
             loss = criterion(output, target)
 
-        acc1, acc4 = accuracy(output, target, topk=(1,4))
+        # acc1, acc4 = accuracy(output, target, topk=(1,4))
+        acc1, acc4 = accuracy(output, target, topk=(1,))
+
 
         batch_size = images.shape[0]
         metric_logger.update(loss=loss.item())
-        metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
-        metric_logger.meters['acc4'].update(acc4.item(), n=batch_size)
+        # metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
+        metric_logger.meters['acc1'].update(acc1[0].item(), n=batch_size)
+        # metric_logger.meters['acc4'].update(acc4.item(), n=batch_size)
 
-    print('* Acc@1 {top1.global_avg:.3f} Acc@4 {top4.global_avg:.3f} loss {losses.global_avg:.3f}'
-          .format(top1=metric_logger.acc1, top4=metric_logger.acc4, losses=metric_logger.loss))
+    # print('* Acc@1 {top1.global_avg:.3f} Acc@4 {top4.global_avg:.3f} loss {losses.global_avg:.3f}'
+    #       .format(top1=metric_logger.acc1, top4=metric_logger.acc4, losses=metric_logger.loss))
+    print('* Acc@1 {top1.global_avg:.3f} loss {losses.global_avg:.3f}'
+          .format(top1=metric_logger.acc1, losses=metric_logger.loss))
 
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
