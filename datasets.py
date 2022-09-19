@@ -198,6 +198,11 @@ def build_dataset(is_train, args):
                                   sampling_ratio=1.)
         nb_classes = 2
 
+    elif args.data_set == 'Binary':
+        root = os.path.join(args.data_path, 'train' if is_train else 'val')
+        dataset = ImageNetDataset(root, transform=transform, sampling_ratio=1.)
+        nb_classes = 2
+
     return dataset, nb_classes
 
 
@@ -232,7 +237,9 @@ def build_transform(is_train, args):
 
     t.append(transforms.ToTensor())
     # t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    
     mean = (0,0,0)
     std = (1,1,1)
+
     t.append(transforms.Normalize(mean, std))
     return transforms.Compose(t)
